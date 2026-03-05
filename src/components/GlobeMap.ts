@@ -450,14 +450,19 @@ export class GlobeMap {
     const initW = this.container.clientWidth || window.innerWidth;
     const initH = this.container.clientHeight || window.innerHeight;
 
+    // WorldView: Free OSM tiles + night sky + atmosphere (per Build Guide)
     globe
-      .globeImageUrl('/textures/earth-topo-bathy.jpg')
+      .globeImageUrl('https://tile.openstreetmap.org/{z}/{x}/{y}.png')
       .backgroundImageUrl('/textures/night-sky.png')
       .atmosphereColor('#4466cc')
       .atmosphereAltitude(0.18)
       .width(initW)
       .height(initH)
       .pathTransitionDuration(0);
+
+    // WorldView: Add 4D timeline scrubber UI
+    this.createTimelineScrubber();
+    this.createLayerControlPanel();
 
     // Orbit controls — match Sentinel's settings
     const controls = globe.controls() as GlobeControlsLike;
@@ -1025,6 +1030,65 @@ export class GlobeMap {
     if (!pov) return;
     const alt = Math.min(4.0, (pov.altitude ?? 1.8) * 1.6);
     this.globe.pointOfView({ lat: pov.lat, lng: pov.lng, altitude: alt }, 500);
+  }
+
+  private createTimelineScrubber(): void {
+    const el = document.createElement('div');
+    el.className = 'timeline-scrubber';
+    el.style.cssText = `
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      max-width: 600px;
+      background: rgba(10, 12, 16, 0.9);
+      border: 1px solid rgba(60, 120, 60, 0.6);
+      border-radius: 4px;
+      padding: 12px;
+      z-index: 100;
+    `;
+    el.innerHTML = `
+      <div style="color: #d4d4d4; font-size: 11px; margin-bottom: 8px; font-family: monospace;">
+        <span>4D Timeline Playback</span>
+        <span style="float: right; opacity: 0.6;">Scrub to replay events</span>
+      </div>
+      <input type="range" min="0" max="100" value="0" style="width: 100%; cursor: pointer;">
+      <div style="color: #888; font-size: 10px; margin-top: 6px; text-align: center; font-family: monospace;">
+        <span class="timeline-label">T+0h</span>
+      </div>
+    `;
+    this.container.appendChild(el);
+  }
+
+  private createLayerControlPanel(): void {
+    const el = document.createElement('div');
+    el.className = 'layer-control-panel';
+    el.style.cssText = `
+      position: absolute;
+      top: 60px;
+      left: 10px;
+      background: rgba(10, 12, 16, 0.95);
+      border: 1px solid rgba(60, 120, 60, 0.6);
+      border-radius: 4px;
+      padding: 12px;
+      z-index: 99;
+      max-width: 200px;
+      font-size: 11px;
+      font-family: monospace;
+      color: #d4d4d4;
+    `;
+    el.innerHTML = `
+      <div style="font-weight: bold; margin-bottom: 8px; color: #88ff44;">Data Layers</div>
+      <div style="opacity: 0.7;">
+        <div>✓ Commercial Flights (ADS-B)</div>
+        <div>✓ Satellites (TLE)</div>
+        <div>✓ Maritime Traffic (AIS)</div>
+        <div>✓ No-Fly Zones (NOTAM)</div>
+        <div>✓ Strike Coordinates</div>
+      </div>
+    `;
+    this.container.appendChild(el);
   }
 
   private createLayerToggles(): void {
